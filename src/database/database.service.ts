@@ -15,11 +15,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         super({ adapter } as any);
     }
     async onModuleInit() {
-        await this.$connect();
+        await this.$connect()
+            .then(() => console.log('Prisma database connected'))
+            .catch((err) => {
+                console.error('Prisma database connection error:', err);
+                process.exitCode = 1;
+            });
     }
 
     async onModuleDestroy() {
-        await this.$disconnect();
+        await this.$disconnect().then(() => console.log('Prisma database disconnected'));
     }
 }
 
