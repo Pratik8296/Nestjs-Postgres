@@ -1,116 +1,152 @@
-# Nestjs-Postgres
-Demo project: NestJS + Prisma + PostgreSQL
+# NestJS + PostgreSQL API
 
-This repository is a minimal NestJS application demonstrating integration with Prisma (generated client) and PostgreSQL. It's configured to build to `dist/` and includes a generated Prisma client located under `src/generated/prisma` that the app expects at runtime.
+A production-ready REST API with JWT authentication, real-time WebSocket support, and PostgreSQL integration using Prisma ORM.
 
-**What this project contains**
-- NestJS app scaffold (controllers, services, modules) in `src/`.
-- A Prisma schema in `prisma/schema.prisma` and generated client files under `src/generated/prisma`.
-- A small `PrismaService` (in `src/database/database.service.ts`) that extends the generated Prisma client and is used by other services (e.g. `users`).
+## Quick Start
 
-**Notes about the runtime setup**
-- The compiled code expects the generated Prisma client to be present under `dist/generated/prisma` when running production builds. During development you typically run the app with `nest start` or `npm run start:dev` which uses the TypeScript source.
-- Environment variables (notably `DATABASE_URL`) are required. The app includes `dotenv` loading in the bootstrap so add a `.env` file at the repository root.
+### Prerequisites
+- Node.js 18+
+- PostgreSQL database
 
-Example `.env`:
-
-```
-DATABASE_URL="postgresql://username:password@host:5432/dbname?schema=public"
-# If your provider requires skipping cert validation (not recommended except for local testing):
-# DB_SSL=true
-```
-
-**Build & Run (local)**
-
-- Install dependencies:
+### Installation
 
 ```bash
 npm install
+npm run prisma:generate
 ```
 
-- Build the project:
+### Configuration
 
-```bash
-npm run build
+Create `.env` file:
+```
+DATABASE_URL="postgresql://user:password@localhost:5432/database"
+JWT_SECRET=your-secret-key-here
+PORT=3000
+NODE_ENV=development
 ```
 
-- Run production build:
+### Running
 
-```bash
-npm run start:prod
-```
-
-- Run in development (watch / HMR via Nest CLI):
-
+**Development:**
 ```bash
 npm run start:dev
 ```
 
-**Prisma commands (useful run commands and workflow)**
-
-Note: adjust commands if you use `npx` or global `prisma` install. The commands below assume you run them from the repository root.
-
-- Format / validate schema (optional):
-
+**Production:**
 ```bash
-npx prisma format
-npx prisma validate
+npm run build
+npm run start:prod
 ```
 
-- Generate the Prisma client (writes to `node_modules/@prisma/client` and updates generated client code):
+## API Endpoints
 
+**Authentication:**
+- `POST /api/auth/login` - Login with email/password
+
+**Users:**
+- `POST /api/users` - Create user
+- `GET /api/users` - List users (supports optional `role` query parameter)
+- `GET /api/users/:id` - Get user by ID
+- `PATCH /api/users/:id` - Update user
+- `DELETE /api/users/:id` - Delete user
+
+**Messages:**
+- `GET /api/messages` - List all messages
+- `GET /api/messages/user/:userId` - Get messages by user
+- `DELETE /api/messages/:id` - Delete message
+
+**WebSocket Events:**
+- `message` - Broadcast message to all connected clients
+- `typing` - Send typing indicator
+- `direct-message` - Send direct message to a specific user
+- `get-users` - Get list of connected users
+
+## Database Schema
+
+**Models:**
+- **User** - email, password, name, role (USER/ADMIN)
+- **Post** - title, content, published status, author reference
+- **Message** - text, sender reference, timestamp
+
+**Migrations:**
 ```bash
-npx prisma generate
+npm run prisma:migrate:dev --name "feature_name"
+npm run prisma:migrate:deploy
+npm run prisma:studio
+npm run prisma:generate
 ```
 
-- Migrate database (create migration and apply locally):
+## Features
+
+✅ JWT authentication with middleware-based token validation  
+✅ Real-time WebSocket messaging (authenticated & unauthenticated clients)  
+✅ PostgreSQL with Prisma ORM and database migrations  
+✅ Request validation with class-validator  
+✅ Global error handling  
+✅ Rate limiting (Throttler module)  
+✅ Security headers (Helmet)  
+✅ CORS enabled  
+✅ Environment configuration validation  
+
+## Architecture
+
+- **Authentication**: JWT with `JwtMiddleware` for optional token validation
+- **WebSocket**: `SocketGateway` handles real-time events with support for both authenticated and unauthenticated connections
+- **Database**: Prisma ORM with PostgreSQL adapter for SSL and connection pooling
+- **Validation**: Class-validator decorators on DTOs with global `ValidationPipe`
+- **Rate Limiting**: Throttler guards configured with short (1s/1 req) and long (60s/5 req) windows
+
+## Development
 
 ```bash
-# Create a new migration from schema changes
-npx prisma migrate dev --name "migration_name"
-
-# Apply pending migrations (useful in CI / production)
-npx prisma migrate deploy
+npm run lint                  # Run ESLint
+npm run build                 # Build TypeScript
+npm run start:dev             # Development with hot-reload
+npm run prisma:studio         # Open Prisma Studio UI
+npm run prisma:migrate:dev    # Create and apply migrations
+npm run prisma:reset          # Reset database (dev only)
 ```
 
-- Inspect the database and open Studio (web GUI):
+## Project Structure
 
-```bash
-npx prisma studio
+```
+src/
+├── app.module.ts            # Root module with all feature modules
+├── app.controller.ts         # Health check endpoint
+├── main.ts                   # Application bootstrap
+├── users/                    # Users module (CRUD operations)
+├── messages/                 # Messages module (message persistence)
+├── socket/                   # WebSocket gateway for real-time messaging
+├── auth/                     # Authentication module (login, JWT)
+├── database/                 # Database service with Prisma client
+├── logger/                   # Logging service
+└── config/                   # Configuration and validation
+prisma/
+├── schema.prisma             # Database schema definitions
+└── migrations/               # Migration history
 ```
 
-- Reset local dev database (WARNING: destructive):
+## Dependencies
 
-```bash
-npx prisma migrate reset
-```
+**Core:**
+- NestJS 11.x
+- Prisma 7.x
+- PostgreSQL
 
-- Generate TypeScript types (if not already generated by `prisma generate`):
+**Features:**
+- `@nestjs/jwt` - JWT token management
+- `@nestjs/websockets` - WebSocket support
+- `@nestjs/throttler` - Rate limiting
+- `class-validator` - Request validation
+- `bcrypt` - Password hashing
+- `helmet` - Security headers
+- `socket.io` - Real-time communication
 
-```bash
-npx prisma generate --schema=prisma/schema.prisma
-```
+**Dev Tools:**
+- TypeScript 5.x
+- ESLint with TypeScript support
+- Jest for testing
 
-**Debugging Prisma / DB connectivity**
+## License
 
-- Verify the `DATABASE_URL` is set and reachable. Quick tests:
-
-```bash
-# Using node + pg module
-node -e "(async ()=>{const { Pool }=require('pg'); const pool=new Pool({connectionString: process.env.DATABASE_URL}); const r=await pool.query('SELECT NOW()'); console.log(r.rows[0]); await pool.end();})().catch(e=>console.error(e))"
-
-# Enable adapter debug logs when debugging adapter connectivity
-# Windows (cmd.exe):
-set DEBUG=prisma:driver-adapter:pg
-node scripts/test-prisma-create.js
-
-# PowerShell:
-$env:DEBUG='prisma:driver-adapter:pg'; node scripts/test-prisma-create.js
-```
-
-**Troubleshooting tips**
-- If your application throws `ECONNREFUSED` from Prisma while a raw `pg` connection works, ensure the Prisma adapter is constructed with the same `DATABASE_URL` and SSL options. In this repo `src/database/database.service.ts` was updated to pass `connectionString: process.env.DATABASE_URL` into the adapter.
-- Ensure `.env` is loaded before the Prisma adapter is constructed (import `dotenv/config` early in bootstrap).
-- For TLS/SSL errors, you may need to pass `ssl: { rejectUnauthorized: false }` for local testing (not recommended in production).
-
-If you'd like, I can add short scripts to `package.json` to standardize these Prisma commands for your environment. Would you like that?
+UNLICENSED

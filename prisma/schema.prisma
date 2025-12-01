@@ -5,23 +5,49 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "binary"
-  output = "../generated/prisma"
+  output     = "../generated/prisma"
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
-model User{
-  id  Int @id @default(autoincrement())
-  name String 
-  email String @unique
+model User {
+  id        Int      @id @default(autoincrement())
+  uniqueId  String?   @unique @default(uuid())
+  name      String
+  email     String   @unique
   password  String
-  role  Role
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  posts    Post[]
+  messages Message[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  uniqueId  String?   @unique @default(uuid())
+  title     String
+  content   String
+  published Boolean  @default(false)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  uniqueId  String?   @unique @default(uuid())
+  text      String
+  senderId  Int
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 enum Role {
